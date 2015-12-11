@@ -2,4 +2,18 @@
     <string name="app_name">Sunshine</string>
     <string name="action_settings">Settings</string>
     <string name="action_refresh" translatable="false">Refresh</string>
+    <string name="title_activity_detail">DetailActivity</string>
+    <string name="title_activity_settings">Settings</string>
+    <string name="pref_pincode">Pincode</string>
+    <string name="pref_pincode_key" translatable="false">pincode</string>
+    <string name="pref_pincode_default" translatable="false">560043</string>
+    <string name="pref_temp">Temperature</string>
+    <string name="pref_temp_key" translatable="false">temperature</string>
+    <string name="pref_temp_default" translatable="false">metric</string>
+    <string name="pref_temp_metric" translatable="false">metric</string>
+    <string name="pref_temp_imperial" translatable="false">imperial</string>
+    <string name="pref_temp_entry_metric" translatable="false">Metric</string>
+    <string name="pref_temp_entry_imperial" translatable="false">Imperial</string>
+    <string name="action_show_on_map">Locate me</string>
+    <string name="action_share">Share</string>
 </resources>

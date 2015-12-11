@@ -1,8 +1,12 @@
 package com.example.android.sunshine;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.preference.PreferenceGroup;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -13,8 +17,10 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,6 +50,9 @@ import java.util.logging.Logger;
 public class ForecastFragment extends Fragment {
 
     ArrayAdapter<String> mWeatherArrayAdapter;
+    String mPincode;
+    String mTemp;
+    SharedPreferences mPreferences;
 
     public ForecastFragment() {
     }
@@ -54,18 +63,45 @@ public class ForecastFragment extends Fragment {
         setHasOptionsMenu(true);
     }
 
+    SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+            if(s == getString(R.string.pref_pincode_key)) {
+                mPincode = mPreferences.getString(getString(R.string.pref_pincode_key), getString(R.string.pref_pincode_default));
+            }
+            else if(s == getString(R.string.pref_temp_key)) {
+                mTemp = mPreferences.getString(getString(R.string.pref_temp_key),getString(R.string.pref_temp_default));
+            }
+        }
+    };
+
+    private void updateWeather() {
+        FetchWeatherClass fetchWeatherClass = new FetchWeatherClass();
+        fetchWeatherClass.execute(mPincode,mTemp);
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-        String[] data = {"Monday - Sunny","Tuesday - Sunny","Wed - Rains","Thur - Rains","Fri - Rains","Sat - Rains","Sun - Rains"};
-        List<String> weatherList = new ArrayList<String>(Arrays.asList(data));
-        Activity parentActivity = getActivity();
-        mWeatherArrayAdapter = new ArrayAdapter<String>(parentActivity,R.layout.list_item_forecast,R.id.list_item_forecast_textview,weatherList);
+        final Activity parentActivity = getActivity();
+        mWeatherArrayAdapter = new ArrayAdapter<String>(parentActivity,R.layout.list_item_forecast,R.id.list_item_forecast_textview,new ArrayList<String>());
         ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
         listView.setAdapter(mWeatherArrayAdapter);
-        FetchWeatherClass fetchWeatherClass = new FetchWeatherClass();
-        fetchWeatherClass.execute("560043");
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+//                Toast.makeText(parentActivity, mWeatherArrayAdapter.getItem(i).toString(), Toast.LENGTH_SHORT).show();
+                Intent detailIntent = new Intent(parentActivity, DetailActivity.class);
+                detailIntent.putExtra(Intent.EXTRA_TEXT, mWeatherArrayAdapter.getItem(i));
+                startActivity(detailIntent);
+            }
+        });
+        mPreferences = PreferenceManager.getDefaultSharedPreferences(parentActivity);
+        mPreferences.registerOnSharedPreferenceChangeListener(listener);
+        mPincode = mPreferences.getString(getString(R.string.pref_pincode_key), getString(R.string.pref_pincode_default));
+        mTemp = mPreferences.getString(getString(R.string.pref_temp_key),getString(R.string.pref_temp_default));
+        updateWeather();
         return rootView;
     }
 
@@ -75,13 +111,22 @@ public class ForecastFragment extends Fragment {
         inflater.inflate(R.menu.menu_forecast_fragment,menu);
     }
 
+
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_refresh) {
-            FetchWeatherClass fetchWeatherClass = new FetchWeatherClass();
-            fetchWeatherClass.execute("560043");
+            updateWeather();
             return true;
+        }
+        else if (id == R.id.action_show_on_map) {
+            Intent mapsIntent = new Intent(Intent.ACTION_VIEW);
+            Uri geoLocation = Uri.parse("geo:0,0?").buildUpon().appendQueryParameter("q",mPincode).build();
+            mapsIntent.setData(geoLocation);
+            if (mapsIntent.resolveActivity(getActivity().getPackageManager()) != null) {
+                getActivity().startActivity(mapsIntent);
+            }
         }
         return super.onOptionsItemSelected(item);
     }
@@ -102,7 +147,11 @@ public class ForecastFragment extends Fragment {
             return maxMinTemp;
         }
 
-        private String[] getWeatherDataFromJson(String weatherJsonString, int numDays) throws JSONException{
+        private Double getFarenheitTemp(Long temp) {
+            return temp * 1.8 + 32;
+        }
+
+        private String[] getWeatherDataFromJson(String weatherJsonString, int numDays,String unit) throws JSONException{
             final String OWM_LIST = "list";
             final String OWM_DATE = "dt";
             final String OWM_TEMP = "temp";
@@ -127,8 +176,15 @@ public class ForecastFragment extends Fragment {
                 long timeStamp = dayWeather.getLong(OWM_DATE);
                 String dateTime = getReadableDate(timeStamp);
 
-                long min = temp.getLong(OWM_MIN);
-                long max = temp.getLong(OWM_MAX);
+                double min,max;
+                if (unit.equals(getString(R.string.pref_temp_metric)))
+                {
+                    min = temp.getLong(OWM_MIN);
+                    max = temp.getLong(OWM_MAX);
+                } else {
+                    min = getFarenheitTemp(temp.getLong(OWM_MIN));
+                    max = getFarenheitTemp(temp.getLong(OWM_MAX));
+                }
                 String maxMin = getMinMaxTemp(min, max);
 
                 String description = weather.getString(OWM_DESCRIPTION);
@@ -180,7 +236,7 @@ public class ForecastFragment extends Fragment {
                 forecastJsonString = buffer.toString();
 
                 try {
-                    String[] weatherData = getWeatherDataFromJson(forecastJsonString,count);
+                    String[] weatherData = getWeatherDataFromJson(forecastJsonString,count,params[1]);
                     return weatherData;
                 } catch (JSONException e){
                     Log.e(LOG_TAG,e.getMessage(),e);
