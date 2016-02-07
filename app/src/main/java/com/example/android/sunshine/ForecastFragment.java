@@ -37,7 +37,7 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
     SharedPreferences mPreferences;
     private static final int FORECAST_LOADER = 0;
 
-    public static final String[] FORECAST_COLUMNS = {
+    private static final String[] FORECAST_COLUMNS = {
             // In this case the id needs to be fully qualified with a table name, since
             // the content provider joins the location & weather tables in the background
             // (both have an _id column)
@@ -52,7 +52,7 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
             WeatherContract.LocationEntry.COLUMN_LOCATION_SETTING,
             WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
             WeatherContract.LocationEntry.COLUMN_COORD_LAT,
-            WeatherContract.LocationEntry.COLUMN_COORD_LONG
+            WeatherContract.LocationEntry.COLUMN_COORD_LONG,
     };
 
     // These indices are tied to FORECAST_COLUMNS.  If FORECAST_COLUMNS changes, these
