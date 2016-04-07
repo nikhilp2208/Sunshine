@@ -35,7 +35,10 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
     String mPincode;
     String mTemp;
     SharedPreferences mPreferences;
+    int mCursorCurrentPos;
+    private boolean mUseTodayLayout;
     private static final int FORECAST_LOADER = 0;
+    private static final String CURSOR_CURRENT_POS = "current_pos_cursor";
 
     private static final String[] FORECAST_COLUMNS = {
             // In this case the id needs to be fully qualified with a table name, since
@@ -119,7 +122,15 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
 //        Cursor cur = getContext().getContentResolver().query(weatherForLocationUri,null,null,null,sortOrder);
         mForecastAdapter = new ForecastAdapter(getActivity(),null,0);
         ListView listView = (ListView) rootView.findViewById(R.id.listview_forecast);
+
         listView.setAdapter(mForecastAdapter);
+
+        if (savedInstanceState != null && savedInstanceState.containsKey(CURSOR_CURRENT_POS)) {
+            mCursorCurrentPos = savedInstanceState.getInt(CURSOR_CURRENT_POS);
+        }
+
+        mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
+
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -127,10 +138,8 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
                 Cursor cursor = (Cursor)adapterView.getItemAtPosition(i);
                 if (cursor != null) {
                     String locationSetting = Utility.getPreferredLocation(getActivity());
-                    Intent detailIntent = new Intent(parentActivity, DetailActivity.class);
-//                detailIntent.putExtra(Intent.EXTRA_TEXT, mForecastAdapter.getItem(i));
-                    detailIntent.setData(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationSetting,cursor.getLong(COL_WEATHER_DATE)));
-                    startActivity(detailIntent);
+                    mCursorCurrentPos = i;
+                    ((Callback) getActivity()).onItemSelected(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationSetting, cursor.getLong(COL_WEATHER_DATE)));
                 }
             }
         });
@@ -147,7 +156,13 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
         inflater.inflate(R.menu.menu_forecast_fragment,menu);
     }
 
-
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        if (mCursorCurrentPos != ListView.INVALID_POSITION) {
+            outState.putInt(CURSOR_CURRENT_POS,mCursorCurrentPos);
+        }
+        super.onSaveInstanceState(outState);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -179,12 +194,34 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        Log.v("ON_LOAD_FINISHED",Integer.toString(data.getCount()));
+        Log.v("ON_LOAD_FINISHED", Integer.toString(data.getCount()));
         mForecastAdapter.swapCursor(data);
+        ListView listView = (ListView) getActivity().findViewById(R.id.listview_forecast);
+        listView.smoothScrollToPosition(mCursorCurrentPos);
+
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         mForecastAdapter.swapCursor(null);
+    }
+
+    public void setUseTodayLayout(boolean useTodayLayout) {
+        mUseTodayLayout = useTodayLayout;
+        if (mForecastAdapter != null) {
+            mForecastAdapter.setUseTodayLayout(mUseTodayLayout);
+        }
+    }
+
+    /**
+     * A callback interface that all activities containing this fragment must
+     * implement. This mechanism allows activities to be notified of item
+     * selections.
+     */
+    public interface Callback {
+        /**
+         * DetailFragmentCallback for when an item has been selected.
+         */
+        public void onItemSelected(Uri dateUri);
     }
 }

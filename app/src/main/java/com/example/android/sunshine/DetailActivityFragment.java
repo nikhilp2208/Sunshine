@@ -30,6 +30,8 @@ public class DetailActivityFragment extends Fragment implements LoaderCallbacks<
     String mMessage;
     private static final int LOADER_ID = 1;
     String mWeatherForecast;
+    Uri mUri;
+    public static final String DETAIL_URI = "detail_uri";
 
     public static final String[] DETAIL_COLUMNS = {
         WeatherContract.WeatherEntry.TABLE_NAME + "." + WeatherContract.WeatherEntry._ID,
@@ -74,7 +76,7 @@ public class DetailActivityFragment extends Fragment implements LoaderCallbacks<
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
-        getLoaderManager().initLoader(LOADER_ID,null,this);
+        getLoaderManager().initLoader(LOADER_ID, null, this);
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -108,6 +110,12 @@ public class DetailActivityFragment extends Fragment implements LoaderCallbacks<
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
+        Bundle arguments = getArguments();
+        if (arguments != null) {
+            mUri = arguments.getParcelable(DetailActivityFragment.DETAIL_URI);
+        }
+
         View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
         mIconView = (ImageView) rootView.findViewById(R.id.detail_icon_imageview);
         mFriendlyDateView = (TextView) rootView.findViewById(R.id.weather_day_textview);
@@ -151,10 +159,10 @@ public class DetailActivityFragment extends Fragment implements LoaderCallbacks<
     public Loader onCreateLoader(int id, Bundle args) {
         Intent intent = getActivity().getIntent();
 
-        if (intent == null)
+        if (null != mUri) {
+            return new CursorLoader(getActivity(),mUri,DETAIL_COLUMNS,null,null,null);
+        }
             return null;
-
-        return new CursorLoader(getActivity(),intent.getData(),DETAIL_COLUMNS,null,null,null);
     }
 
     @Override
@@ -187,5 +195,16 @@ public class DetailActivityFragment extends Fragment implements LoaderCallbacks<
     @Override
     public void onLoaderReset(Loader loader) {
 
+    }
+
+    void onLocationChanged( String newLocation ) {
+        // replace the uri, since the location has changed
+        Uri uri = mUri;
+        if (null != uri) {
+            long date = WeatherContract.WeatherEntry.getDateFromUri(uri);
+            Uri updatedUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(newLocation, date);
+            mUri = updatedUri;
+            getLoaderManager().restartLoader(LOADER_ID, null, this);
+        }
     }
 }

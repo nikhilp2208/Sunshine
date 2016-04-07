@@ -24,6 +24,7 @@ public class ForecastAdapter extends CursorAdapter {
 
     private final static int VIEW_TYPE_TODAY = 0;
     private final static int VIEW_TYPE_FUTURE_DAY = 1;
+    private boolean mUseTodayLayout;
 
     /**
      * Prepare the weather high/lows for presentation.
@@ -59,9 +60,13 @@ public class ForecastAdapter extends CursorAdapter {
         return 2;
     }
 
+    public void setUseTodayLayout(boolean UseTodayLayout) {
+        mUseTodayLayout = UseTodayLayout;
+    }
+
     @Override
     public int getItemViewType(int position) {
-        return (position == 0) ? VIEW_TYPE_TODAY : VIEW_TYPE_FUTURE_DAY;
+        return (position == 0 && mUseTodayLayout) ? VIEW_TYPE_TODAY : VIEW_TYPE_FUTURE_DAY;
     }
 
     /*
