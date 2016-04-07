@@ -25,6 +25,7 @@ import android.support.v4.content.Loader;
 import android.support.v4.content.CursorLoader;
 
 import com.example.android.sunshine.data.WeatherContract;
+import com.example.android.sunshine.service.SunshineService;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -100,8 +101,13 @@ public class ForecastFragment extends Fragment implements android.support.v4.app
     private void updateWeather() {
 //        FetchWeatherTask fetchWeatherClass = new FetchWeatherTask(getContext(),mForecastAdapter);
 //        fetchWeatherClass.execute(mPincode,mTemp);
-        FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
-        weatherTask.execute(Utility.getPreferredLocation(getActivity()));
+//        FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
+//        weatherTask.execute(Utility.getPreferredLocation(getActivity()));
+
+        Intent intent = new Intent(getActivity(), SunshineService.class);
+        intent.putExtra(SunshineService.LOCATION_QUERY_EXTRA,
+                Utility.getPreferredLocation(getActivity()));
+        getActivity().startService(intent);
     }
 
     @Override

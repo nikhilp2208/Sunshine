@@ -42,6 +42,7 @@
             android:exported="true"
             android:permission="com.myapp.sunshine">
         </provider>
+        <service android:name=".service.SunshineService"/>
     </application>
 
     <permission
