@@ -14,6 +14,9 @@ import android.widget.TextView;
 
 public class DetailActivity extends AppCompatActivity {
 
+    public DetailActivity() {
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
